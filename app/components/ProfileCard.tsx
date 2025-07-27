@@ -7,14 +7,23 @@ import { useEffect, useState } from "react";
 import { TokenWithbalance, useTokens } from "../api/hooks/useTokens";
 import { TokenList } from "./TokenList";
 import { Swap } from "./Swap";
+import { MarketData } from "./MarketData";
+import { OrderBook } from "./OrderBook";
+import { PortfolioOverview } from "./PortfolioOverview";
+import { SecurityCenter } from "./SecurityCenter";
+import { PriceChart } from "./PriceChart";
 
-type Tab = "tokens" | "send" | "add_funds" | "swap" | "withdraw"
+type Tab = "portfolio" | "tokens" | "trading" | "swap" | "market" | "security" | "send" | "add_funds" | "withdraw"
 const tabs: {id: Tab; name: string}[] = [
+    {id: "portfolio", name: "Portfolio"}, 
     {id: "tokens", name: "Tokens"}, 
+    {id: "trading", name: "Trading"}, 
+    {id: "swap", name: "Swap"},
+    {id: "market", name: "Market"}, 
+    {id: "security", name: "Security"}, 
     {id: "send", name: "Send"}, 
     {id: "add_funds", name: "Add funds"},
     {id: "withdraw", name: "Withdraw"},
-    {id: "swap", name: "Swap"},
 ];
 
 export const ProfileCard = ({publicKey}: {
@@ -22,7 +31,7 @@ export const ProfileCard = ({publicKey}: {
 }) => {
     const session = useSession();
     const router = useRouter();
-    const [selectedTab, setSelectedTab] = useState<Tab>("tokens");
+    const [selectedTab, setSelectedTab] = useState<Tab>("portfolio");
     const { tokenBalances, loading } = useTokens(publicKey);
 
     if (session.status === "loading") {
@@ -49,11 +58,51 @@ export const ProfileCard = ({publicKey}: {
                 }}>{tab.name}</TabButton>)}
             </div>
             
+            <div className={`${selectedTab === "portfolio" ? "visible" : "hidden"}`}><PortfolioTab tokenBalances={tokenBalances} loading={loading} publicKey={publicKey} /> </div>
             <div className={`${selectedTab === "tokens" ? "visible" : "hidden"}`}><Assets tokenBalances={tokenBalances} loading={loading} publicKey={publicKey} /> </div>
+            <div className={`${selectedTab === "trading" ? "visible" : "hidden"}`}><TradingTab /> </div>
             <div className={`${selectedTab === "swap" ? "visible" : "hidden"}`}><Swap tokenBalances={tokenBalances} publicKey={publicKey} /> </div>
-            <div className={`${(selectedTab !== "swap" && selectedTab !== "tokens") ? "visible" : "hidden"}`}><Warning /> </div>
+            <div className={`${selectedTab === "market" ? "visible" : "hidden"}`}><MarketTab /> </div>
+            <div className={`${selectedTab === "security" ? "visible" : "hidden"}`}><SecurityTab /> </div>
+            <div className={`${(selectedTab !== "portfolio" && selectedTab !== "tokens" && selectedTab !== "trading" && selectedTab !== "swap" && selectedTab !== "market" && selectedTab !== "security") ? "visible" : "hidden"}`}><Warning /> </div>
         </div>
         
+    </div>
+}
+
+function PortfolioTab({publicKey, tokenBalances, loading}: {
+    publicKey: string;
+    tokenBalances: {
+        totalBalance: number,
+        tokens: TokenWithbalance[]
+    } | null;
+    loading: boolean;
+}) {
+    if (loading) {
+        return <div className="p-12">Loading portfolio...</div>
+    }
+
+    return <div className="p-6">
+        <PortfolioOverview publicKey={publicKey} />
+    </div>
+}
+
+function TradingTab() {
+    return <div className="p-6 space-y-6">
+        <PriceChart symbol="SOL/USDC" timeRange="1d" />
+        <OrderBook />
+    </div>
+}
+
+function MarketTab() {
+    return <div className="p-6">
+        <MarketData />
+    </div>
+}
+
+function SecurityTab() {
+    return <div className="p-6">
+        <SecurityCenter />
     </div>
 }
 
@@ -116,13 +165,21 @@ function Assets({publicKey, tokenBalances, loading}: {
     </div>
 }
 
+import Image from "next/image";
+
 function Greeting({
     image, name
 }: {
     image: string, name: string
 }) {
     return <div className="flex p-12">
-        <img src={image} className="rounded-full w-16 h-16 mr-4" />
+        <Image 
+            src={image || '/default-avatar.png'} 
+            alt={`${name}'s profile picture`}
+            width={64}
+            height={64}
+            className="rounded-full w-16 h-16 mr-4" 
+        />
         <div className="text-2xl font-semibold flex flex-col justify-center">
            Welcome back, {name}
         </div>
